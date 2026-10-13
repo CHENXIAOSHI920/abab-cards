@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ABAB 副词">
+<meta name="theme-color" content="#FAF7F0">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>ABAB 副词 · 单词卡</title>
+<style>
+  :root{
+    --ink:#2E2A26; --ink2:#6B625A; --ink3:#A79C90;
+    --line:#E7DFD3; --paper:#FAF7F0; --accent:#C2707C;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0}
+  body{
+    min-height:100dvh;
+    display:flex; flex-direction:column; gap:10px;
+    max-width:680px; margin:0 auto;
+    padding:16px 16px calc(14px + env(safe-area-inset-bottom));
+    background:var(--paper); color:var(--ink);
+    font-family:"PingFang SC","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,system-ui,-apple-system,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .top{display:grid;grid-template-columns:1fr auto;align-items:end;gap:2px 12px}
+  .brand h1{margin:0;font-size:19px;font-weight:600;letter-spacing:.03em}
+  .brand p{margin:3px 0 0;font-size:11.5px;color:var(--ink3)}
+  .counter{text-align:right;font-size:12px;color:var(--ink3);font-variant-numeric:tabular-nums}
+  .counter b{font-size:17px;font-weight:600;color:var(--ink)}
+  .progress{grid-column:1/-1;height:3px;margin-top:9px;border-radius:3px;background:#EDE6DA;overflow:hidden}
+  .progress i{display:block;height:100%;width:0;border-radius:3px;background:var(--accent);transition:width .25s ease,background .25s ease}
+  .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto;font:inherit;font-size:12.5px;padding:6px 12px;border-radius:999px;
+        border:1px solid var(--line);background:#fff;color:var(--ink2);cursor:pointer;white-space:nowrap}
+  .chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .toggles{display:flex;flex-wrap:wrap;gap:6px}
+  .tg{font:inherit;font-size:12px;padding:5px 10px;border-radius:8px;border:1px dashed #DCD2C4;
+      background:transparent;color:var(--ink3);cursor:pointer}
+  .tg.on{border-style:solid;border-color:var(--ink);background:var(--ink);color:#fff}
+  main{flex:1;display:flex;flex-direction:column;gap:10px;min-height:0}
+  .stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:4px 0}
+  .card{position:relative;width:100%;max-width:480px;height:100%;max-height:620px;min-height:250px;
+        margin:auto;transform-style:preserve-3d;cursor:pointer;
+        user-select:none;-webkit-user-select:none;
+        transition:transform .5s cubic-bezier(.22,.72,.24,1)}
+  .card.flipped{transform:rotateY(180deg)}
+  .face{position:absolute;inset:0;display:flex;flex-direction:column;padding:18px;
+        border-radius:22px;overflow:hidden;
+        backface-visibility:hidden;-webkit-backface-visibility:hidden}
+  .blank{background:#FFFEFB;border:1px solid var(--line);box-shadow:0 14px 34px -22px rgba(70,52,34,.45);
+         align-items:center;justify-content:center;text-align:center}
+  .info{transform:rotateY(180deg);border:1px solid var(--line);
+        background:linear-gradient(180deg,var(--tint) 0%,#fff 58%);
+        box-shadow:0 14px 34px -22px rgba(70,52,34,.45)}
+  .info::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--accent)}
+  .cat{align-self:flex-start;font-size:11.5px;padding:3px 10px;border-radius:999px;
+       background:#fff;border:1px solid var(--accent);color:var(--accent)}
+  .mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+       gap:12px;padding:6px 2px;text-align:center;overflow-y:auto;scrollbar-width:none}
+  .mid::-webkit-scrollbar{display:none}
+  .word{font-size:clamp(30px,9.5vw,46px);font-weight:600;letter-spacing:.04em;line-height:1.18;word-break:break-word}
+  .word.med{font-size:clamp(24px,7.5vw,38px)}
+  .word.long{font-size:clamp(19px,5.6vw,30px);letter-spacing:.02em}
+  .blank .word{font-size:clamp(38px,12vw,60px)}
+  .blank .word.med{font-size:clamp(30px,9.5vw,48px)}
+  .blank .word.long{font-size:clamp(22px,7vw,34px)}
+  .cn{font-size:clamp(16px,4.6vw,20px);line-height:1.65;color:var(--ink);max-width:20em;transition:filter .22s ease}
+  .cn.blur{filter:blur(9px);cursor:pointer}
+  .exbox{display:none;width:100%}
+  .exbox.on{display:block}
+  .ex{margin:12px auto 0;max-width:23em;padding-top:12px;border-top:1px dashed var(--line);
+      font-family:"Hiragino Mincho ProN","Yu Mincho",YuMincho,serif;
+      font-size:clamp(12.5px,3.7vw,14.5px);line-height:2;color:var(--ink2);text-align:left}
+  .ex .hit{font-style:normal;font-weight:700;color:var(--accent);
+           border-bottom:2px solid var(--accent);padding-bottom:1px}
+  .src{margin:9px 0 0;font-size:10.5px;color:var(--ink3);text-align:right;letter-spacing:.02em}
+  .acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center}
+  .mini{font:inherit;font-size:12.5px;padding:6px 12px;border-radius:999px;
+        border:1px solid var(--line);background:#fff;color:var(--ink2);cursor:pointer}
+  .mini.on{border-color:#E0B84C;background:#FFF8E4;color:#B98B12}
+  .note{font-size:11px;color:#BDB2A6}
+  .note.warn{color:var(--accent);border:1px dashed var(--accent);border-radius:999px;padding:3px 9px}
+  .nav{display:flex;gap:8px}
+  .nav button{flex:1;font:inherit;font-size:14px;padding:13px 8px;border-radius:14px;
+              border:1px solid var(--line);background:#fff;color:#4A423B;cursor:pointer}
+  .nav button:active{transform:translateY(1px)}
+  .nav #flipBtn{flex:1.4;background:var(--ink);border-color:var(--ink);color:#fff}
+  .foot{font-size:11.5px;line-height:1.7;color:var(--ink3);text-align:center;margin:0}
+  @media (max-height:640px){
+    body{gap:8px;padding-top:10px}
+    .card{min-height:200px}
+    .ex{line-height:1.8;margin-top:8px;padding-top:8px}
+    .word{font-size:clamp(24px,7.5vw,38px)}
+    .blank .word{font-size:clamp(28px,9vw,44px)}
+    .blank .word.med{font-size:clamp(24px,7.5vw,36px)}
+    .blank .word.long{font-size:clamp(18px,6vw,28px)}
+    .chips,.toggles{display:none}
+  }
+</style>
+</head>
+<body>
+  <div class="top">
+    <div class="brand">
+      <h1 id="title">ABAB 副词</h1>
+      <p id="subtitle"></p>
+    </div>
+    <div class="counter"><b id="pos">0</b> / <span id="total">0</span></div>
+    <div class="progress"><i id="bar"></i></div>
+  </div>
+
+  <div class="chips" id="chips"></div>
+
+  <div class="toggles" id="toggles">
+    <button class="tg" data-opt="shuffle">乱序</button>
+    <button class="tg" data-opt="hideCn">遮中文</button>
+    <button class="tg" data-opt="starOnly">只看★</button>
+    <button class="tg on" data-opt="blankFirst">先看假名面</button>
+    <button class="tg" data-opt="autoSpeak">自动朗读</button>
+  </div>
+
+  <main>
+    <div class="stage" id="stage">
+      <div class="card" id="card">
+        <div class="face blank">
+          <div class="word" id="promptWord"></div>
+        </div>
+        <div class="face info">
+          <div class="cat" id="catTag"></div>
+          <div class="mid">
+            <div class="word" id="word"></div>
+            <div class="cn" id="cn"></div>
+            <div class="exbox" id="exbox">
+              <p class="ex" id="ex"></p>
+              <p class="src" id="src"></p>
+            </div>
+          </div>
+          <div class="acts">
+            <button class="mini" id="speakBtn">🔊 朗读</button>
+            <button class="mini" id="starBtn">★ 标记</button>
+            <div class="note" id="noteTag"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="nav">
+      <button id="prevBtn">‹ 上一张</button>
+      <button id="flipBtn">翻面</button>
+      <button id="nextBtn">下一张 ›</button>
+    </div>
+    <p class="foot" id="foot"></p>
+  </main>
+
+<script>
+/*__DATA_START__*/
+const DATA = {
+  "meta": {
+    "title": "ABAB 副词",
+    "subtitle": "相同的节拍，不同的感觉。先认场景，再比较词义。",
+    "credit": "词表来自小红书 6032084331 的四张整理图；词性与词义参考 JMdict 2026-09-21。",
+    "note": "严格 ABAB = 两拍词基重复（如 きら＋きら）。带备注的词属于长词基重复、连浊叠式、近似叠式，或并非副词，仅供对照。"
+  },
+  "categories": [
+    {
+      "id": "emo",
+      "name": "情绪与心境",
+      "desc": "期待、焦虑、担忧与心情",
+      "accent": "#C2707C",
+      "tint": "#FCF3F2"
+    },
+    {
+      "id": "body",
+      "name": "身体与感官",
+      "desc": "睡眠、疼痛、震颤与食欲",
+      "accent": "#BE8A46",
+      "tint": "#FCF8F0"
+    },
+    {
+      "id": "move",
+      "name": "移动与摇晃",
+      "desc": "旋转、漂浮、行走与滚动",
+      "accent": "#5B8BA8",
+      "tint": "#F2F8FB"
+    },
+    {
+      "id": "pace",
+      "name": "节奏与进展",
+      "desc": "忙乱、拖延、顺畅与成长",
+      "accent": "#5E8A58",
+      "tint": "#F2F8F1"
+    },
+    {
+      "id": "tex",
+      "name": "质感与光湿",
+      "desc": "触摸、光泽、干湿与物体状态",
+      "accent": "#8A6FA8",
+      "tint": "#F7F4FA"
+    },
+    {
+      "id": "snd",
+      "name": "声音与语言",
+      "desc": "笑声、哭泣、人声与环境声",
+      "accent": "#4E8A7B",
+      "tint": "#F1F8F6"
+    },
+    {
+      "id": "behav",
+      "name": "行为与态度",
+      "desc": "目光、隐秘、郑重与交往",
+      "accent": "#A08A3C",
+      "tint": "#FAF7EE"
+    },
+    {
+      "id": "freq",
+      "name": "频率与程度",
+      "desc": "反复、时间、数量与概括表达",
+      "accent": "#6B7086",
+      "tint": "#F5F5F8"
+    }
+  ],
+  "words": [
+    {
+      "w": "いそいそ",
+      "cn": "兴冲冲、兴高采烈",
+      "cat": "emo"
+    },
+    {
+      "w": "いやいや",
+      "cn": "不情愿地",
+      "cat": "emo",
+      "ex": "興味が持てなくてすぐにやめたり、いやいや練習を続けることになって、スポーツが嫌いになってしまったりすることがあるのだ。",
+      "src": "N2 2021年7月"
+    },
+    {
+      "w": "いらいら",
+      "cn": "烦躁、焦躁",
+      "cat": "emo"
+    },
+    {
+      "w": "うきうき",
+      "cn": "心情雀跃",
+      "cat": "emo"
+    },
+    {
+      "w": "うずうず",
+      "cn": "急切想做、按捺不住",
+      "cat": "emo"
+    },
+    {
+      "w": "おたおた",
+      "cn": "慌乱、不知所措",
+      "cat": "emo"
+    },
+    {
+      "w": "おどおど",
+      "cn": "胆怯、战战兢兢",
+      "cat": "emo"
+    },
+    {
+      "w": "おろおろ",
+      "cn": "慌张、手足无措",
+      "cat": "emo"
+    },
+    {
+      "w": "くよくよ",
+      "cn": "为小事烦恼、耿耿于怀",
+      "cat": "emo"
+    },
+    {
+      "w": "こりごり",
+      "cn": "受够了、不想再经历",
+      "cat": "emo",
+      "note": "连浊叠式"
+    },
+    {
+      "w": "しぶしぶ",
+      "cn": "勉勉强强、不情愿",
+      "cat": "emo"
+    },
+    {
+      "w": "しみじみ",
+      "cn": "深切地、感慨地",
+      "cat": "emo",
+      "note": "连浊叠式"
+    },
+    {
+      "w": "そわそわ",
+      "cn": "心神不定、坐立不安",
+      "cat": "emo"
+    },
+    {
+      "w": "はらはら",
+      "cn": "担心、捏一把汗；轻轻飘落",
+      "cat": "emo"
+    },
+    {
+      "w": "ひしひし",
+      "cn": "强烈而真切地感到",
+      "cat": "emo"
+    },
+    {
+      "w": "びくびく",
+      "cn": "提心吊胆",
+      "cat": "emo"
+    },
+    {
+      "w": "ほのぼの",
+      "cn": "温暖、温馨；隐约",
+      "cat": "emo",
+      "note": "连浊叠式"
+    },
+    {
+      "w": "もじもじ",
+      "cn": "忸忸怩怩、扭扭捏捏",
+      "cat": "emo"
+    },
+    {
+      "w": "やまやま",
+      "cn": "非常想做（却做不到）；许多山",
+      "cat": "emo"
+    },
+    {
+      "w": "わくわく",
+      "cn": "兴奋期待",
+      "cat": "emo",
+      "ex": "毎日わくわくしながら学校に通ったものだ。",
+      "src": "N2 真题总集"
+    },
+    {
+      "w": "うとうと",
+      "cn": "迷迷糊糊打瞌睡",
+      "cat": "body"
+    },
+    {
+      "w": "がつがつ",
+      "cn": "狼吞虎咽；贪婪地",
+      "cat": "body"
+    },
+    {
+      "w": "くらくら",
+      "cn": "眩晕、眼花",
+      "cat": "body"
+    },
+    {
+      "w": "しょぼしょぼ",
+      "cn": "眼睛疲劳睁不开；细雨绵绵",
+      "cat": "body"
+    },
+    {
+      "w": "すやすや",
+      "cn": "安稳地睡",
+      "cat": "body"
+    },
+    {
+      "w": "ずきずき",
+      "cn": "一阵阵地痛",
+      "cat": "body"
+    },
+    {
+      "w": "ずきんずきん",
+      "cn": "一跳一跳地痛",
+      "cat": "body",
+      "note": "长词基重复"
+    },
+    {
+      "w": "どくどく",
+      "cn": "发冷、打寒战；兴奋战栗",
+      "cat": "body"
+    },
+    {
+      "w": "どきどき",
+      "cn": "心怦怦跳",
+      "cat": "body",
+      "ex": "わたしたちはどきどきしながら、「大好きな先生にあげるから、できるだけ大きい花束を作ってください」とお願いした。",
+      "src": "N3 2021年7月"
+    },
+    {
+      "w": "ぴんぴん",
+      "cn": "精神、身体健壮",
+      "cat": "body"
+    },
+    {
+      "w": "ぶるぶる",
+      "cn": "身体或物体发抖",
+      "cat": "body"
+    },
+    {
+      "w": "ぺこぺこ",
+      "cn": "肚子饿；点头哈腰",
+      "cat": "body"
+    },
+    {
+      "w": "むかむか",
+      "cn": "反胃、恶心；气愤",
+      "cat": "body"
+    },
+    {
+      "w": "むしゃむしゃ",
+      "cn": "大口大口地吃",
+      "cat": "body"
+    },
+    {
+      "w": "むずむず",
+      "cn": "发痒；跃跃欲试",
+      "cat": "body"
+    },
+    {
+      "w": "わなわな",
+      "cn": "因愤怒、恐惧等发抖",
+      "cat": "body"
+    },
+    {
+      "w": "うろうろ",
+      "cn": "徘徊、走来走去",
+      "cat": "move",
+      "ex": "たとえそこをたくさんの人間がうろうろしていようとも、平気で棲みついてしまう。",
+      "src": "N3 2010年12月（节选）"
+    },
+    {
+      "w": "くるくる",
+      "cn": "轻快地转圈；频繁变化",
+      "cat": "move"
+    },
+    {
+      "w": "ぐるぐる",
+      "cn": "不停转圈；一圈圈缠绕",
+      "cat": "move"
+    },
+    {
+      "w": "ころころ",
+      "cn": "小物体滚动；轻易变化",
+      "cat": "move"
+    },
+    {
+      "w": "ごろごろ",
+      "cn": "大物体滚动；隆隆响；闲躺",
+      "cat": "move"
+    },
+    {
+      "w": "ずるずる",
+      "cn": "拖曳、拖延；吸溜声",
+      "cat": "move"
+    },
+    {
+      "w": "ぞろぞろ",
+      "cn": "一个接一个地成群移动",
+      "cat": "move"
+    },
+    {
+      "w": "ちょこちょこ",
+      "cn": "小步快走；零星、频繁地",
+      "cat": "move"
+    },
+    {
+      "w": "てくてく",
+      "cn": "持续步行、一步一步走",
+      "cat": "move"
+    },
+    {
+      "w": "のそのそ",
+      "cn": "慢吞吞地移动",
+      "cat": "move"
+    },
+    {
+      "w": "のろのろ",
+      "cn": "行动迟缓",
+      "cat": "move"
+    },
+    {
+      "w": "ふらふら",
+      "cn": "摇摇晃晃；漫无目的地走",
+      "cat": "move",
+      "ex": "熱があるから、立って歩くと少し体がふらふらする。",
+      "src": "N3 2020年12月"
+    },
+    {
+      "w": "ふわふわ",
+      "cn": "轻飘飘；松软",
+      "cat": "move",
+      "ex": "咲き終わると真っ白な綿毛になって、種をつけてふわふわ飛んでいきます。",
+      "src": "N2 2021年7月"
+    },
+    {
+      "w": "ぶらぶら",
+      "cn": "闲逛；悬挂晃荡",
+      "cat": "move",
+      "ex": "ロボピーは手をぶらぶらさせながら、どこかへ向かって歩きだした。",
+      "src": "N1 2023年7月（节选）"
+    },
+    {
+      "w": "ぷかぷか",
+      "cn": "浮在水面；一口口吸烟",
+      "cat": "move"
+    },
+    {
+      "w": "ぼろぼろ",
+      "cn": "一颗颗掉落（眼泪、碎屑等）",
+      "cat": "move"
+    },
+    {
+      "w": "ゆらゆら",
+      "cn": "轻轻摇曳",
+      "cat": "move"
+    },
+    {
+      "w": "よぼよぼ",
+      "cn": "衰老虚弱、步履蹒跚",
+      "cat": "move"
+    },
+    {
+      "w": "あくせく",
+      "cn": "忙忙碌碌；为小事操心",
+      "cat": "pace",
+      "note": "近似叠式"
+    },
+    {
+      "w": "きびきび",
+      "cn": "动作利落、精神饱满",
+      "cat": "pace"
+    },
+    {
+      "w": "ぐいぐい",
+      "cn": "用力推进；积极逼近",
+      "cat": "pace"
+    },
+    {
+      "w": "ぐずぐず",
+      "cn": "磨蹭；嘟囔抱怨",
+      "cat": "pace"
+    },
+    {
+      "w": "ぐんぐん",
+      "cn": "快速增长、进步",
+      "cat": "pace"
+    },
+    {
+      "w": "こつこつ",
+      "cn": "踏实地一点点积累；轻敲声",
+      "cat": "pace",
+      "ex": "資格をとるために、この一年間、毎日こつこつと勉強をしてきた。",
+      "src": "N2 真题总集"
+    },
+    {
+      "w": "すいすい",
+      "cn": "轻快顺畅地进行",
+      "cat": "pace"
+    },
+    {
+      "w": "すくすく",
+      "cn": "茁壮成长",
+      "cat": "pace",
+      "ex": "そして僕はそこからすくすくと伸びる一本の木なのだ。",
+      "src": "N2 真题总集"
+    },
+    {
+      "w": "すらすら",
+      "cn": "流利、顺畅",
+      "cat": "pace"
+    },
+    {
+      "w": "ずんずん",
+      "cn": "不断向前、迅速推进",
+      "cat": "pace"
+    },
+    {
+      "w": "せかせか",
+      "cn": "匆忙、急躁",
+      "cat": "pace"
+    },
+    {
+      "w": "そうそう",
+      "cn": "匆匆、急急忙忙（匆匆）",
+      "cat": "pace"
+    },
+    {
+      "w": "だらだら",
+      "cn": "拖沓；连续流淌",
+      "cat": "pace",
+      "ex": "汗がだらだらと流れる。",
+      "src": "N1 2021年12月"
+    },
+    {
+      "w": "てきぱき",
+      "cn": "做事麻利、有条不紊",
+      "cat": "pace",
+      "note": "近似叠式"
+    },
+    {
+      "w": "どんどん",
+      "cn": "接连不断；迅速推进；咚咚声",
+      "cat": "pace",
+      "ex": "機械はどんどん精密化し、巨大に進化している。",
+      "src": "N1 2023年12月"
+    },
+    {
+      "w": "はきはき",
+      "cn": "说话清楚爽快；态度干脆",
+      "cat": "pace"
+    },
+    {
+      "w": "ばたばた",
+      "cn": "忙乱；扑腾声；相继发生",
+      "cat": "pace"
+    },
+    {
+      "w": "めきめき",
+      "cn": "进步或发展显著",
+      "cat": "pace",
+      "ex": "激しい練習のおかげでめきめき上達した。",
+      "src": "N1 2021年12月"
+    },
+    {
+      "w": "もたもた",
+      "cn": "动作迟缓、磨磨蹭蹭",
+      "cat": "pace"
+    },
+    {
+      "w": "きらきら",
+      "cn": "闪闪发光",
+      "cat": "tex"
+    },
+    {
+      "w": "ぎちぎち",
+      "cn": "嘎吱摩擦响；挤得没有余地",
+      "cat": "tex"
+    },
+    {
+      "w": "ぎらぎら",
+      "cn": "强烈刺眼地闪耀",
+      "cat": "tex"
+    },
+    {
+      "w": "こうこう",
+      "cn": "灯光明亮、耀眼（煌々）",
+      "cat": "tex"
+    },
+    {
+      "w": "さらさら",
+      "cn": "干爽顺滑；潺潺；沙沙",
+      "cat": "tex",
+      "ex": "多くの汗腺が活発に働いていれば、蒸発しやすいさらさらした汗が作られ、体温調節がスムーズに行われる。",
+      "src": "N2 真题总集（节选）"
+    },
+    {
+      "w": "ざらざら",
+      "cn": "表面有颗粒、粗糙",
+      "cat": "tex"
+    },
+    {
+      "w": "じとじと",
+      "cn": "湿漉漉、黏湿",
+      "cat": "tex"
+    },
+    {
+      "w": "じめじめ",
+      "cn": "潮湿；阴郁",
+      "cat": "tex"
+    },
+    {
+      "w": "すべすべ",
+      "cn": "表面细腻光滑",
+      "cat": "tex"
+    },
+    {
+      "w": "だぶだぶ",
+      "cn": "衣服肥大；液体晃动",
+      "cat": "tex"
+    },
+    {
+      "w": "つやつや",
+      "cn": "光泽润亮",
+      "cat": "tex"
+    },
+    {
+      "w": "つるつる",
+      "cn": "光滑；吸溜面条声",
+      "cat": "tex"
+    },
+    {
+      "w": "ぬるぬる",
+      "cn": "滑腻、滑溜溜",
+      "cat": "tex"
+    },
+    {
+      "w": "ねばねば",
+      "cn": "黏稠、有黏性",
+      "cat": "tex"
+    },
+    {
+      "w": "ぴかぴか",
+      "cn": "闪亮；崭新",
+      "cat": "tex"
+    },
+    {
+      "w": "べたべた",
+      "cn": "黏糊糊；过分亲昵",
+      "cat": "tex",
+      "ex": "このような汗はべたべたとしており、蒸発しにくい。",
+      "src": "N2 真题总集（节选）"
+    },
+    {
+      "w": "ぼろぼろ",
+      "cn": "破破烂烂；纷纷掉落",
+      "cat": "tex"
+    },
+    {
+      "w": "むしむし",
+      "cn": "闷热",
+      "cat": "tex"
+    },
+    {
+      "w": "がたがた",
+      "cn": "哐当震动；发抖；不稳固",
+      "cat": "snd"
+    },
+    {
+      "w": "がみがみ",
+      "cn": "喋喋不休地训斥",
+      "cat": "snd"
+    },
+    {
+      "w": "がやがや",
+      "cn": "人声嘈杂",
+      "cat": "snd"
+    },
+    {
+      "w": "がんがん",
+      "cn": "砰砰声；强烈地；头痛欲裂",
+      "cat": "snd"
+    },
+    {
+      "w": "くすくす",
+      "cn": "轻声偷笑",
+      "cat": "snd"
+    },
+    {
+      "w": "けろけろ",
+      "cn": "青蛙呱呱叫；电子变声效果",
+      "cat": "snd"
+    },
+    {
+      "w": "げらげら",
+      "cn": "放声大笑",
+      "cat": "snd"
+    },
+    {
+      "w": "ごしごし",
+      "cn": "用力反复擦洗",
+      "cat": "snd"
+    },
+    {
+      "w": "ざあざあ",
+      "cn": "大雨、流水等哗哗声",
+      "cat": "snd"
+    },
+    {
+      "w": "しとしと",
+      "cn": "细雨淅淅沥沥",
+      "cat": "snd"
+    },
+    {
+      "w": "じゃぶじゃぶ",
+      "cn": "大量用水洗涤、搅动水",
+      "cat": "snd"
+    },
+    {
+      "w": "にこにこ",
+      "cn": "笑眯眯",
+      "cat": "snd",
+      "ex": "遊んでいる私たちを見て、祖母はうれしそうににこにこしていた。",
+      "src": "N3 2023年7月"
+    },
+    {
+      "w": "にやにや",
+      "cn": "意味深长地笑、窃笑",
+      "cat": "snd"
+    },
+    {
+      "w": "ひそひそ",
+      "cn": "压低声音窃窃私语",
+      "cat": "snd"
+    },
+    {
+      "w": "ぺらぺら",
+      "cn": "流利地说；喋喋不休；薄",
+      "cat": "snd"
+    },
+    {
+      "w": "ぽんぽん",
+      "cn": "接连砰砰响；火势旺盛",
+      "cat": "snd"
+    },
+    {
+      "w": "めそめそ",
+      "cn": "哭哭啼啼",
+      "cat": "snd"
+    },
+    {
+      "w": "わいわい",
+      "cn": "热热闹闹、吵吵嚷嚷",
+      "cat": "snd"
+    },
+    {
+      "w": "うかうか",
+      "cn": "漫不经心、不留神",
+      "cat": "behav"
+    },
+    {
+      "w": "おそるおそる",
+      "cn": "小心翼翼、战战兢兢",
+      "cat": "behav",
+      "note": "长词基重复"
+    },
+    {
+      "w": "かわるがわる",
+      "cn": "轮番、交替",
+      "cat": "behav",
+      "note": "连浊叠式"
+    },
+    {
+      "w": "こそこそ",
+      "cn": "偷偷摸摸；嘀嘀咕咕",
+      "cat": "behav"
+    },
+    {
+      "w": "ごたごた",
+      "cn": "杂乱；纠纷、争执",
+      "cat": "behav"
+    },
+    {
+      "w": "ごちゃごちゃ",
+      "cn": "乱糟糟；啰里啰嗦",
+      "cat": "behav",
+      "ex": "値段が高いのから安いのまでごちゃごちゃにおいてたのはよくなかったかもしれないね。",
+      "src": "N2 2021年12月"
+    },
+    {
+      "w": "しゃあしゃあ",
+      "cn": "厚着脸皮、若无其事",
+      "cat": "behav"
+    },
+    {
+      "w": "じろじろ",
+      "cn": "不客气地反复打量",
+      "cat": "behav",
+      "ex": "じろじろ見られたりしない？",
+      "src": "N2 2023年7月"
+    },
+    {
+      "w": "ちゃほや",
+      "cn": "奉承、娇宠",
+      "cat": "behav",
+      "note": "近似叠式"
+    },
+    {
+      "w": "どうどう",
+      "cn": "堂堂正正；气势庄严（堂々）",
+      "cat": "behav"
+    },
+    {
+      "w": "ばらばら",
+      "cn": "分散；不一致；散落",
+      "cat": "behav",
+      "ex": "最近では、家族がばらばらに食事をする傾向がある。",
+      "src": "N2 2021年12月"
+    },
+    {
+      "w": "ぱらぱら",
+      "cn": "稀稀落落；翻书声；小雨",
+      "cat": "behav"
+    },
+    {
+      "w": "まじまじ",
+      "cn": "凝神仔细地看",
+      "cat": "behav"
+    },
+    {
+      "w": "しゅじゅ",
+      "cn": "各种各样（種々）",
+      "cat": "freq",
+      "note": "连浊叠式"
+    },
+    {
+      "w": "じわじわ",
+      "cn": "一点点、逐渐地",
+      "cat": "freq"
+    },
+    {
+      "w": "そこそこ",
+      "cn": "大致、差不多；适度",
+      "cat": "freq",
+      "ex": "まあ、値段はそこそこしたけどね。",
+      "src": "N1 2022年12月"
+    },
+    {
+      "w": "そろそろ",
+      "cn": "差不多该……；缓慢地",
+      "cat": "freq",
+      "ex": "そろそろ夕飯の時間だね。",
+      "src": "N3 2005年12月"
+    },
+    {
+      "w": "たびたび",
+      "cn": "屡次、再三",
+      "cat": "freq",
+      "ex": "画家は思い出のその地をたびたび訪ねている。",
+      "src": "N2 2004年12月"
+    },
+    {
+      "w": "ちょくちょく",
+      "cn": "时常、隔三差五",
+      "cat": "freq"
+    },
+    {
+      "w": "ちんぷんかんぷん",
+      "cn": "莫名其妙、完全听不懂",
+      "cat": "freq",
+      "note": "相邻表达 · 非副词"
+    },
+    {
+      "w": "どうのこうの",
+      "cn": "这呀那呀、说三道四",
+      "cat": "freq",
+      "note": "近似叠式"
+    },
+    {
+      "w": "どしどし",
+      "cn": "接连不断；尽管、多多地",
+      "cat": "freq"
+    },
+    {
+      "w": "ながなが",
+      "cn": "长时间、冗长地",
+      "cat": "freq"
+    },
+    {
+      "w": "なんだかんだ",
+      "cn": "这样那样；种种事情",
+      "cat": "freq",
+      "note": "近似叠式"
+    },
+    {
+      "w": "まずまず",
+      "cn": "还算可以、尚可",
+      "cat": "freq"
+    }
+  ]
+};
+/*__DATA_END__*/
+
+const $ = (s) => document.querySelector(s);
+const STAR_KEY = 'abab-cards-star-v1';
+
+let starred = new Set();
+try { starred = new Set(JSON.parse(localStorage.getItem(STAR_KEY) || '[]')); } catch (e) {}
+const saveStars = () => { try { localStorage.setItem(STAR_KEY, JSON.stringify([...starred])); } catch (e) {} };
+
+const opts = { cat:'all', shuffle:false, hideCn:false, starOnly:false, blankFirst:true, autoSpeak:false };
+
+const catById = {};
+for (const c of DATA.categories) catById[c.id] = c;
+
+let deck = [];
+let idx = 0;
+let showInfo = false;
+let cnRevealed = false;
+
+const keyOf = (w) => w.cat + '|' + w.w;
+
+const escapeHtml = (s) => String(s).replace(/[&<>"]/g, (c) => (
+  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]
+));
+
+function shuffleInPlace(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+}
+
+function reload(keepKey) {
+  const keep = keepKey || (deck[idx] ? keyOf(deck[idx]) : null);
+  let list = DATA.words.filter((w) => opts.cat === 'all' || w.cat === opts.cat);
+  if (opts.starOnly) list = list.filter((w) => starred.has(keyOf(w)));
+  if (opts.shuffle) shuffleInPlace(list);
+  deck = list;
+  idx = keep ? deck.findIndex((w) => keyOf(w) === keep) : 0;
+  if (idx < 0) idx = 0;
+  showInfo = !opts.blankFirst;
+  cnRevealed = false;
+  render();
+  if (showInfo && opts.autoSpeak && deck[idx]) speak(deck[idx].w);
+}
+
+function clamp() {
+  if (!deck.length) { idx = 0; return; }
+  if (idx < 0) idx = deck.length - 1;
+  if (idx >= deck.length) idx = 0;
+}
+
+function footText() {
+  return (showInfo ? '轻点卡片翻回假名面' : '轻点卡片翻面看释义') + ' · 已标星 ' + starred.size + ' 个';
+}
+
+function render() {
+  const w = deck[idx];
+  const card = $('#card');
+  const total = deck.length;
+
+  $('#total').textContent = total;
+  $('#pos').textContent = total ? idx + 1 : 0;
+  $('#bar').style.width = total ? ((idx + 1) / total) * 100 + '%' : '0%';
+
+  if (!w) {
+    card.style.visibility = 'hidden';
+    $('#foot').textContent = opts.starOnly
+      ? '还没有标星的词。翻到信息面点「★ 标记」，就能把记不住的词单独存起来。'
+      : '这个词组里没有卡片。';
+    return;
+  }
+  card.style.visibility = 'visible';
+
+  const c = catById[w.cat] || { name:'', accent:'#C2707C', tint:'#FCF3F2' };
+  card.style.setProperty('--accent', c.accent);
+  card.style.setProperty('--tint', c.tint);
+  document.documentElement.style.setProperty('--accent', c.accent);
+  $('#bar').style.background = c.accent;
+  $('#catTag').textContent = c.name;
+
+  const sizeClass = w.w.length >= 7 ? ' long' : w.w.length >= 5 ? ' med' : '';
+  const word = $('#word');
+  word.textContent = w.w;
+  word.className = 'word' + sizeClass;
+  const promptWord = $('#promptWord');
+  promptWord.textContent = w.w;
+  promptWord.className = 'word' + sizeClass;
+
+  $('#cn').textContent = w.cn;
+  $('#cn').classList.toggle('blur', opts.hideCn && !cnRevealed);
+
+  const exbox = $('#exbox');
+  if (w.ex) {
+    const hit = escapeHtml(w.w);
+    $('#ex').innerHTML = escapeHtml(w.ex).split(hit).join('<em class="hit">' + hit + '</em>');
+    $('#src').textContent = '出处：' + (w.src || '');
+    exbox.classList.add('on');
+  } else {
+    $('#ex').textContent = '';
+    $('#src').textContent = '';
+    exbox.classList.remove('on');
+  }
+
+  const note = $('#noteTag');
+  if (w.note) { note.textContent = w.note; note.className = 'note warn'; }
+  else { note.textContent = '严格 ABAB'; note.className = 'note'; }
+
+  const on = starred.has(keyOf(w));
+  const star = $('#starBtn');
+  star.classList.toggle('on', on);
+  star.textContent = on ? '★ 已标记' : '★ 标记';
+
+  card.classList.toggle('flipped', showInfo);
+  $('#foot').textContent = footText();
+}
+
+function flip(force) {
+  if (!deck[idx]) return;
+  showInfo = typeof force === 'boolean' ? force : !showInfo;
+  cnRevealed = false;
+  $('#cn').classList.toggle('blur', opts.hideCn);
+  $('#card').classList.toggle('flipped', showInfo);
+  $('#foot').textContent = footText();
+  if (showInfo && opts.autoSpeak) speak(deck[idx].w);
+}
+
+function go(step) {
+  if (!deck.length) return;
+  idx += step;
+  clamp();
+  showInfo = !opts.blankFirst;
+  cnRevealed = false;
+  render();
+  if (showInfo && opts.autoSpeak) speak(deck[idx].w);
+}
+
+function speak(text) {
+  if (!text || !('speechSynthesis' in window)) return;
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ja-JP';
+    u.rate = 0.85;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+
+function buildChips() {
+  const chips = $('#chips');
+  const make = (id, label) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (opts.cat === id ? ' on' : '');
+    b.textContent = label;
+    b.addEventListener('click', () => {
+      opts.cat = id;
+      buildChips();
+      reload(null);
+    });
+    return b;
+  };
+  chips.innerHTML = '';
+  chips.appendChild(make('all', '全部 ' + DATA.words.length));
+  for (const c of DATA.categories) {
+    const n = DATA.words.filter((w) => w.cat === c.id).length;
+    chips.appendChild(make(c.id, c.name + ' ' + n));
+  }
+}
+
+document.querySelectorAll('.tg').forEach((b) => {
+  b.addEventListener('click', () => {
+    const k = b.dataset.opt;
+    opts[k] = !opts[k];
+    b.classList.toggle('on', opts[k]);
+    if (k === 'blankFirst') {
+      showInfo = !opts.blankFirst;
+      cnRevealed = false;
+      render();
+    } else {
+      reload(null);
+    }
+    b.blur();
+  });
+});
+
+let touchX = null, touchY = null, swiped = false;
+
+$('#card').addEventListener('click', () => {
+  if (swiped) { swiped = false; return; }
+  flip();
+});
+
+$('#cn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (opts.hideCn && !cnRevealed) {
+    cnRevealed = true;
+    $('#cn').classList.remove('blur');
+    return;
+  }
+  flip();
+});
+
+$('#starBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const w = deck[idx];
+  if (!w) return;
+  const k = keyOf(w);
+  if (starred.has(k)) starred.delete(k); else starred.add(k);
+  saveStars();
+  if (opts.starOnly && !starred.has(k)) reload(null); else render();
+});
+
+$('#speakBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (deck[idx]) speak(deck[idx].w);
+});
+
+$('#prevBtn').addEventListener('click', (e) => { go(-1); e.currentTarget.blur(); });
+$('#nextBtn').addEventListener('click', (e) => { go(1); e.currentTarget.blur(); });
+$('#flipBtn').addEventListener('click', (e) => { flip(); e.currentTarget.blur(); });
+
+const stage = $('#stage');
+stage.addEventListener('touchstart', (e) => {
+  touchX = e.touches[0].clientX;
+  touchY = e.touches[0].clientY;
+  swiped = false;
+}, { passive: true });
+stage.addEventListener('touchmove', (e) => {
+  if (touchX === null) return;
+  const dx = e.touches[0].clientX - touchX;
+  const dy = e.touches[0].clientY - touchY;
+  if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) swiped = true;
+}, { passive: true });
+stage.addEventListener('touchend', (e) => {
+  if (touchX === null) return;
+  const dx = e.changedTouches[0].clientX - touchX;
+  const dy = e.changedTouches[0].clientY - touchY;
+  if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy)) {
+    swiped = true;
+    go(dx < 0 ? 1 : -1);
+  }
+  touchX = null;
+  touchY = null;
+}, { passive: true });
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flip(); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+  else if (e.key === 'ArrowRight') { e.preventDefault(); go(1); }
+});
+
+$('#title').textContent = DATA.meta.title;
+$('#subtitle').textContent = DATA.meta.subtitle;
+document.title = DATA.meta.title + ' · 单词卡';
+buildChips();
+reload(null);
+if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+  addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  });
+}
+</script>
+</body>
+</html>
